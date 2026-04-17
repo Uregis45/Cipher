@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪢</text></svg>">
+  <title>KnotCipher Chat — Encrypted Real-Time Chat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="chat-container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🔐 KnotCipher Chat</h1>
+    <p>Tie your secrets in knots. Only the right key unties them.</p>
+    <div class="header-meta">
+      <small>Your ID: <span id="currentUser">Loading…</span></small>
+      <span id="onlineCount">0 online</span>
+    </div>
+    <small>Room: <span id="currentRoom">lobby</span></small>
+  </div>
+
+  <!-- Knot Key setup -->
+  <div class="key-section">
+    <div class="input-wrapper">
+      <input
+        type="password"
+        id="knotKeyInput"
+        placeholder="Enter your Knot Key (shared secret)"
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <button id="toggleKeyVisibility" title="Show/hide key">👁️</button>
+    </div>
+    <button onclick="setKnotKey()">🔑 Set Knot Key</button>
+    <div id="keyStatus" class="status" style="background:#ff9800;">⚠️ No Knot Key set</div>
+  </div>
+
+  <!-- Room setup -->
+  <div class="room-section">
+    <input
+      type="text"
+      id="roomInput"
+      placeholder="Room name (e.g. Alice&amp;Bob)"
+      value="lobby"
+      autocomplete="off"
+      spellcheck="false"
+    >
+    <button onclick="joinRoom()">🚪 Join / Create Room</button>
+    <div id="roomStatus" class="status" style="background:#2196f3;">📡 Joining lobby…</div>
+  </div>
+
+  <!-- Typing indicator -->
+  <div id="typingIndicator"></div>
+
+  <!-- Messages -->
+  <div class="messages-area" id="messagesContainer">
+    <div class="empty-placeholder">
+      💬 Set your Knot Key and join a room to start chatting
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <input
+      type="text"
+      id="messageInput"
+      placeholder="Type your secret message… 🔒"
+      autocomplete="off"
+      spellcheck="false"
+    >
+    <button onclick="sendMessage()">📤 Send Encrypted</button>
+  </div>
+
+  <!-- Footer info -->
+  <div class="info">
+    💡 Both people must use the <strong>same Room Name</strong> and <strong>same Knot Key</strong> — messages are AES-256 encrypted end-to-end
+  </div>
+
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
