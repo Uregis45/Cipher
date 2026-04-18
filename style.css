@@ -1,6 +1,6 @@
 /* ============================================================
-   KnotCipher Chat — style.css
-   Keeping original structure + polished upgrades
+   KnotCipher Ghost — style.css
+   Original structure + Ghost Mode styles
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -208,6 +208,61 @@ body::before {
 .key-section > button:hover  { background: var(--gold-dark); }
 .key-section > button:active { transform: scale(0.97); }
 
+/* ── Ghost Mode Toggle ── */
+.ghost-section {
+  background: #1a1a2e;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid #2a2a3e;
+}
+
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.mode-btn {
+  background: #2a2a3e;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #aaa;
+}
+
+.mode-btn.active {
+  background: #6c63ff;
+  color: white;
+  box-shadow: 0 2px 8px rgba(108,99,255,0.3);
+}
+
+#ghostTimerContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+#ghostTimerSelect {
+  background: #2a2a3e;
+  border: 1px solid #3a3a4e;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: white;
+  font-size: 12px;
+}
+
 /* ── Room Section ── */
 .room-section {
   background: #e8f4fd;
@@ -316,6 +371,20 @@ body::before {
 
 .message.sent     { align-items: flex-end; }
 .message.received { align-items: flex-start; }
+
+/* Ghost message special styling */
+.message.ghost-message .message-bubble {
+  border-left: 3px solid #ff6b6b;
+}
+
+.ghost-badge {
+  font-size: 10px;
+  background: rgba(255,107,107,0.2);
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-left: 8px;
+  color: #ff6b6b;
+}
 
 .msg-meta {
   margin-bottom: 2px;
@@ -510,4 +579,13 @@ body::before {
 
   .input-area { padding: 10px 12px; }
   .input-area button { padding: 11px 16px; font-size: 12.5px; }
+  
+  .ghost-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  #ghostTimerContainer {
+    justify-content: space-between;
+  }
 }

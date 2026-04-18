@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪢</text></svg>">
-  <title>KnotCipher Chat — Encrypted Real-Time Chat</title>
+  <title>KnotCipher Ghost — Encrypted Chat with Self-Destruct</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
   <!-- Header -->
   <div class="header">
     <h1>🔐 KnotCipher Chat</h1>
-    <p>Tie your secrets in knots. Only the right key unties them.</p>
+    <p>Tie your secrets in knots. Only the right key unties them. 👻 Ghost mode = self-destruct</p>
     <div class="header-meta">
       <small>Your ID: <span id="currentUser">Loading…</span></small>
       <span id="onlineCount">0 online</span>
@@ -36,6 +36,25 @@
     </div>
     <button onclick="setKnotKey()">🔑 Set Knot Key</button>
     <div id="keyStatus" class="status" style="background:#ff9800;">⚠️ No Knot Key set</div>
+  </div>
+
+  <!-- Ghost Mode Toggle Section -->
+  <div class="ghost-section">
+    <div class="mode-toggle">
+      <span>📝 Mode:</span>
+      <button id="classicModeBtn" class="mode-btn active">Classic (Permanent)</button>
+      <button id="ghostModeBtn" class="mode-btn">👻 Ghost (Self-Destruct)</button>
+    </div>
+    <div id="ghostTimerContainer" style="display: none;">
+      <label>⏱️ Self-destruct after:</label>
+      <select id="ghostTimerSelect">
+        <option value="5">5 seconds</option>
+        <option value="15">15 seconds</option>
+        <option value="30" selected>30 seconds</option>
+        <option value="60">1 minute</option>
+        <option value="300">5 minutes</option>
+      </select>
+    </div>
   </div>
 
   <!-- Room setup -->
@@ -76,7 +95,8 @@
 
   <!-- Footer info -->
   <div class="info">
-    💡 Both people must use the <strong>same Room Name</strong> and <strong>same Knot Key</strong> — messages are AES-256 encrypted end-to-end
+    💡 Both people must use the <strong>same Room Name</strong> and <strong>same Knot Key</strong> — messages are AES-256 encrypted end-to-end<br>
+    👻 <strong>Ghost mode</strong>: Messages self-destruct after chosen time from BOTH devices
   </div>
 
 </div>

@@ -1,6 +1,7 @@
 // ============================================================
-//  KnotCipher Chat — script.js
+//  KnotCipher Ghost — script.js
 //  Real AES-GCM encryption via Web Crypto API + Firebase RTDB
+//  NEW: Ghost Mode with self-destructing messages
 // ============================================================
 
 // ── Firebase config ─────────────────────────────────────────
@@ -30,6 +31,11 @@ let isKeySet       = false;
 let typingTimeout  = null;
 let onlineRef      = null;
 let typingRef      = null;
+
+// ── Ghost Mode State ─────────────────────────────────────────
+let currentMode      = "classic";   // "classic" or "ghost"
+let ghostTimer       = 30;          // seconds
+let ghostTimeouts    = new Map();    // track active ghost timers
 
 // ── User ID ──────────────────────────────────────────────────
 function generateUserId() {
@@ -126,6 +132,51 @@ async function setKnotKey() {
   }
 }
 
+// ── Ghost Mode Functions ───────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  const classicBtn = document.getElementById("classicModeBtn");
+  const ghostBtn   = document.getElementById("ghostModeBtn");
+  const timerContainer = document.getElementById("ghostTimerContainer");
+  
+  if (mode === "classic") {
+    classicBtn.classList.add("active");
+    ghostBtn.classList.remove("active");
+    timerContainer.style.display = "none";
+    showToast("📝 Classic mode — messages are permanent");
+  } else {
+    ghostBtn.classList.add("active");
+    classicBtn.classList.remove("active");
+    timerContainer.style.display = "flex";
+    showToast("👻 Ghost mode — messages will self-destruct");
+  }
+}
+
+function scheduleGhostDeletion(messageId, messageRef, seconds) {
+  // Clear any existing timer for this message
+  if (ghostTimeouts.has(messageId)) {
+    clearTimeout(ghostTimeouts.get(messageId));
+  }
+  
+  const timeout = setTimeout(async () => {
+    // Delete from Firebase
+    await messageRef.remove();
+    // Remove from UI with fade effect
+    const msgElement = document.querySelector(`.message[data-key="${messageId}"]`);
+    if (msgElement) {
+      msgElement.style.transition = "opacity 0.3s";
+      msgElement.style.opacity = "0";
+      setTimeout(() => {
+        if (msgElement && msgElement.parentNode) msgElement.remove();
+      }, 300);
+    }
+    ghostTimeouts.delete(messageId);
+    showToast("💀 A ghost message self-destructed", 1500);
+  }, seconds * 1000);
+  
+  ghostTimeouts.set(messageId, timeout);
+}
+
 // ── Room ─────────────────────────────────────────────────────
 function joinRoom() {
   const roomName = document.getElementById("roomInput").value.trim();
@@ -135,6 +186,12 @@ function joinRoom() {
   if (currentMsgRef)  currentMsgRef.off();
   if (onlineRef)      onlineRef.remove();
   if (typingRef)      typingRef.remove();
+  
+  // Clear ghost timers from previous room
+  for (const [id, timer] of ghostTimeouts) {
+    clearTimeout(timer);
+  }
+  ghostTimeouts.clear();
 
   currentRoom = sanitiseRoomName(roomName);
   messageCache.clear();
@@ -210,21 +267,26 @@ async function sendMessage() {
     return;
   }
 
-  // Optimistic clear
   input.value = "";
   database.ref(`rooms/${currentRoom}/typing/${currentUser}`).remove();
 
   const encrypted = await encryptMessage(text, cryptoKey);
 
   const msgData = {
-    sender:    currentUser,
+    sender:      currentUser,
     encrypted,
-    timestamp: Date.now()
+    timestamp:   Date.now(),
+    mode:        currentMode,           // NEW: store mode
+    ghostTimer:  currentMode === "ghost" ? ghostTimer : null   // NEW: store timer
   };
 
-  await database.ref(`rooms/${currentRoom}/messages`).push(msgData);
+  const newMsgRef = await database.ref(`rooms/${currentRoom}/messages`).push(msgData);
+  
+  // If ghost mode, schedule deletion immediately (sender side)
+  if (currentMode === "ghost") {
+    scheduleGhostDeletion(newMsgRef.key, newMsgRef, ghostTimer);
+  }
 
-  // Clean up old messages (keep DB tidy — cap at ~200 per room)
   capMessages();
 }
 
@@ -244,7 +306,7 @@ async function capMessages() {
 async function displayMessage(msg, key) {
   const container  = document.getElementById("messagesContainer");
   const isOwn      = msg.sender === currentUser;
-  const time        = new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const time       = new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   let decrypted = null;
   if (isKeySet) {
@@ -253,6 +315,7 @@ async function displayMessage(msg, key) {
 
   const el        = document.createElement("div");
   el.className    = `message ${isOwn ? "sent" : "received"}`;
+  if (msg.mode === "ghost") el.classList.add("ghost-message");
   el.dataset.key  = key;
   el.dataset.enc  = msg.encrypted;
 
@@ -261,9 +324,10 @@ async function displayMessage(msg, key) {
     : `<span class="locked-msg">🔒 Wrong key or not yet set</span>`;
 
   const encPreview = msg.encrypted.substring(0, 24) + "…";
+  const ghostBadge = msg.mode === "ghost" ? `<span class="ghost-badge">👻 ${msg.ghostTimer}s</span>` : "";
 
   el.innerHTML = `
-    <div class="msg-meta">${isOwn ? "" : `<span class="sender-name">${escHtml(msg.sender)}</span>`}</div>
+    <div class="msg-meta">${isOwn ? "" : `<span class="sender-name">${escHtml(msg.sender)}</span>`} ${ghostBadge}</div>
     <div class="message-bubble">
       <div class="bubble-text">${bubbleText}</div>
       <div class="msg-footer">
@@ -274,12 +338,17 @@ async function displayMessage(msg, key) {
     <div class="message-encrypted">🔒 ${encPreview}</div>
   `;
 
-  // Remove placeholder
   const placeholder = container.querySelector(".empty-placeholder");
   if (placeholder) placeholder.remove();
 
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
+
+  // Schedule ghost deletion for received ghost messages
+  if (msg.mode === "ghost" && msg.ghostTimer && !isOwn) {
+    const msgRef = database.ref(`rooms/${currentRoom}/messages/${key}`);
+    scheduleGhostDeletion(key, msgRef, msg.ghostTimer);
+  }
 }
 
 // Re-render all messages when key changes
@@ -298,7 +367,7 @@ async function reDecryptMessages() {
 }
 
 // ── Toast ────────────────────────────────────────────────────
-function showToast(msg) {
+function showToast(msg, duration = 3000) {
   let t = document.getElementById("toast");
   if (!t) {
     t = document.createElement("div");
@@ -307,7 +376,7 @@ function showToast(msg) {
   }
   t.textContent = msg;
   t.className   = "toast show";
-  setTimeout(() => { t.className = "toast"; }, 3000);
+  setTimeout(() => { t.className = "toast"; }, duration);
 }
 
 // ── Util ─────────────────────────────────────────────────────
@@ -341,6 +410,19 @@ window.onload = () => {
       const isPassword = keyInput.type === "password";
       keyInput.type    = isPassword ? "text" : "password";
       toggleBtn.textContent = isPassword ? "🙈" : "👁️";
+    });
+  }
+
+  // Ghost mode toggle buttons
+  const classicBtn = document.getElementById("classicModeBtn");
+  const ghostBtn = document.getElementById("ghostModeBtn");
+  const timerSelect = document.getElementById("ghostTimerSelect");
+  
+  if (classicBtn) classicBtn.addEventListener("click", () => setMode("classic"));
+  if (ghostBtn) ghostBtn.addEventListener("click", () => setMode("ghost"));
+  if (timerSelect) {
+    timerSelect.addEventListener("change", (e) => {
+      ghostTimer = parseInt(e.target.value, 10);
     });
   }
 
